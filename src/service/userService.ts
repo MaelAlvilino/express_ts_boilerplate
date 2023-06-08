@@ -1,5 +1,9 @@
 import { User } from '../models/user.model';
 import { PrismaClient } from '@prisma/client';
+import axios from 'axios';
+import { postalCodeInterface } from '../types/error';
+import { Githubinterface } from '../types/github';
+import { UploadedFile } from '../types/file';
 
 export class UserService {
   prisma = new PrismaClient();
@@ -16,6 +20,9 @@ export class UserService {
     if (user) {
       throw new Error('Usuario já existe na base de dados');
     }
+    const findByCep: postalCodeInterface = await axios.get(
+      `https://brasilapi.com.br/api/cep/v2/${userData.postalCode}`,
+    );
 
     if (!user) {
       const newUser: User = {
@@ -24,6 +31,9 @@ export class UserService {
         password: userData.password,
         login: userData.login,
         postalCode: userData.postalCode,
+        street: findByCep.data.street,
+        neighborhood: findByCep.data.neighborhood,
+        state: findByCep.data.state,
       };
 
       await this.prisma.user.create({
@@ -35,7 +45,6 @@ export class UserService {
   }
 
   async deleteUser(email: string): Promise<{ message: string }> {
-    console.log(email);
     const findUser = await this.prisma.user.findFirst({
       where: {
         email,
@@ -54,30 +63,85 @@ export class UserService {
     return { message: 'Usuario removido da base de dados com sucesso.' };
   }
 
-  //   updateUser(email: string): User | undefined {
-  //     const user = this.prisma.user.update({
-  //         where: {
-  //             email,
-  //         },
-  //         data:{
+  async updateUser(id: any, user: any): Promise<{ message: string }> {
+    const userUpdate = await this.prisma.user.findUnique({
+      where: {
+        email: id,
+      },
+    });
 
-  //         }
-  //     });
+    if (!userUpdate) {
+      throw new Error('Usuario não encontrado');
+    }
+    if (userUpdate) {
+      await this.prisma.user.update({
+        where: {
+          email: user.email,
+        },
+        data: {
+          neighborhood: user.neighborhood,
+          postalCode: user.postalCode,
+          state: user.state,
+          street: user.street,
+          name: user.name,
+          login: user.login,
+          password: user.password,
+        },
+      });
+    }
+    return { message: 'Usuario alterado com sucesso!' };
+  }
 
-  //     if (user) {
-  //       user.name = userData.name;
-  //       user.email = userData.email;
+  async getAllUsers() {
+    const findAllUsers = await this.prisma.user.findMany({});
+    return findAllUsers;
+  }
 
-  //       return user;
-  //     }
+  async getUserById(email: string) {
+    const findUserById = await this.prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+    return findUserById;
+  }
 
-  //     return undefined;
-  //   }
+  async getGitHubUser(user: string): Promise<Githubinterface | undefined> {
+    try {
+      const response = await axios.get(`https://api.github.com/users/${user}`);
+      if (response) {
+        return response.data;
+      }
+    } catch (error: any) {
+      console.error('Erro na requisição:', error.message);
+    }
+  }
 
-  //   getAllUsers(): User {
-  //   }
+  async uploadFile(file: UploadedFile): Promise<void> {
+    console.log(file);
+    const a = file.buffer;
+    const b = a.toString('base64');
 
-  //   getUserById(id: string): User | undefined {
-  //     return this.users.find((user) => user.id === id);
-  //   }
+    await this.prisma.arquivo.create({
+      data: {
+        file: b,
+        fileName: file.originalname,
+      },
+    });
+  }
+
+  async getFiles() {
+    const getAllFiles = await this.prisma.arquivo.findMany({});
+    return getAllFiles;
+  }
+
+  async downloadFile(file: string) {
+    console.log(file);
+    const files = await this.prisma.arquivo.findUnique({
+      where: {
+        fileName: file,
+      },
+    });
+    return files;
+  }
 }

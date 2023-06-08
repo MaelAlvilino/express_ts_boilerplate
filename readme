@@ -1,0 +1,7 @@
+-- Instalar as dependencias --
+    npm install
+-- Iniciar o Projeto -- 
+    npx prisma generate
+    npm run dev
+-- Subir uma migrate -- 
+    npx prisma migrate dev

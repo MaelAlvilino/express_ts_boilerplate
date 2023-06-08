@@ -8,14 +8,19 @@ generator client {
 }
 
 model User {
-  id            Int    @id @default(autoincrement())
-  name          String
-  email         String @unique
-  login         String
-  password      String
-  postalCode    String
-  street        String?
-  neighborhood  String?
-  address       String?
-  state         String?
+  id           Int     @id @default(autoincrement())
+  name         String
+  email        String  @unique
+  login        String
+  password     String
+  postalCode   String
+  street       String?
+  neighborhood String?
+  state        String?
+}
+
+model Arquivo {
+  id       Int    @id @default(autoincrement())
+  fileName String @unique
+  file     String
 }
