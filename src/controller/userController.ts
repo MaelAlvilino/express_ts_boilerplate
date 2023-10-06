@@ -1,5 +1,3 @@
-// controllers/userController.ts
-
 import express, { Request, Response } from 'express';
 import { UserService } from '../service/userService';
 import multer from 'multer';
